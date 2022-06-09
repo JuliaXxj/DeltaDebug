@@ -11,7 +11,7 @@ from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
 import matplotlib.pyplot as plt
 from custom_transform import EraseHalf
-from model import MNISTNet
+from models import MNISTNet
 from transforms import TRANSFORMS
 import numpy as np
 

@@ -6,7 +6,7 @@ import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import numpy as np
 import torch.optim as optim
-from model import CIFAR10Net
+from models import CIFAR10Net
 import torch.optim as optim
 import torch.nn as nn
 
