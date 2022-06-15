@@ -213,6 +213,52 @@ def fgsm_attack(image, eps, data_grad):
 
 
 # https://github.com/pytorch/examples/tree/main/mnist
+
+class NewTinyCNN(BaseNet):
+    def __init__(self):
+        super(NewTinyCNN, self).__init__()
+        self.conv1 = nn.Conv2d(1, 32, 3, 1)
+        self.conv2 = nn.Conv2d(32, 64, 3, 1)
+        self.dropout1 = nn.Dropout(0.25)
+        self.dropout2 = nn.Dropout(0.5)
+        self.fc1 = nn.Linear(9216, 128)
+        self.fc2 = nn.Linear(128, 10)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.conv2(x)
+        x = F.relu(x)
+        x = F.max_pool2d(x, 2)
+        #         x = self.dropout1(x)
+        x = torch.flatten(x, 1)
+        # print(x.shape)
+        x = self.fc1(x)
+        x = F.relu(x)
+        #         x = self.dropout2(x)
+        x = self.fc2(x)
+        output = F.log_softmax(x, dim=1)
+        return output
+
+    def register_log(self, detach=True):
+        self.reset_hooks()
+        # first layer should not make any difference?
+        self.hooks.append(self.conv1.register_forward_hook(get_activation('conv1', self.tensor_log, detach)))
+        self.hooks.append(self.conv2.register_forward_hook(get_activation('conv2', self.tensor_log, detach)))
+        self.hooks.append(self.fc1.register_forward_hook(get_activation('fc1', self.tensor_log, detach)))
+        self.hooks.append(self.fc2.register_forward_hook(get_activation('fc2', self.tensor_log, detach)))
+
+    def register_gradient(self, detach=True):
+        self.reset_bw_hooks()
+        # first layer should not make any difference?
+        self.bw_hooks.append(self.conv1.register_backward_hook(get_gradient('conv1', self.gradient_log, detach)))
+        self.bw_hooks.append(self.conv2.register_backward_hook(get_gradient('conv2', self.gradient_log, detach)))
+        self.bw_hooks.append(self.fc1.register_backward_hook(get_gradient('fc1', self.gradient_log, detach)))
+        self.bw_hooks.append(self.fc2.register_backward_hook(get_gradient('fc2', self.gradient_log, detach)))
+
+    def model_savename(self, tag=""):
+        return "NewTinyCNN" + tag + datetime.now().strftime("%H:%M:%S")
+
 class MNISTNet(nn.Module):
     def __init__(self):
         super(MNISTNet, self).__init__()
