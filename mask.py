@@ -86,8 +86,9 @@ def split_in_smaller_groups(unmasked_pixels: torch.Tensor, num_groups):
 
     all_new_masks = []
     each_group_num = total_pixel // num_groups
+    res = total_pixel % num_groups
     current_group = 0
-    checked_existed_pixel_num = 0
+    checked_existed_pixel_num = each_group_num + (res != 0)
 
     current_mask = unmasked_pixels.clone()
     for i in range(h):
@@ -96,13 +97,63 @@ def split_in_smaller_groups(unmasked_pixels: torch.Tensor, num_groups):
                 continue
             for k in range(c):
                 current_mask[k][i][j] = 0
-            checked_existed_pixel_num += 1
+            checked_existed_pixel_num -= 1
 
-            if checked_existed_pixel_num % each_group_num == 0 and current_group < num_groups - 1:
+            if checked_existed_pixel_num == 0:
                 all_new_masks.append(current_mask)
 
                 current_mask = unmasked_pixels.clone()
                 current_group += 1
-    all_new_masks.append(current_mask)
+                checked_existed_pixel_num = each_group_num + (current_group < res)
 
+    # all_new_masks.append(current_mask)
+    assert current_group == num_groups
     return all_new_masks
+
+def split_in_smaller_groups_new(unmasked_pixels: torch.Tensor, num_groups):
+
+    """
+    Split the pixels into num_groups groups sequentially and return the corresponding generated masks.
+    """
+    print("new")
+    c, h, w = unmasked_pixels.shape
+    total_pixel = int(torch.sum(unmasked_pixels[0]).item())
+
+    # Each group needs to have at least one pixel.
+    if num_groups > total_pixel:
+        raise Exception("Too less pixels existed! Group number is even greater than total number of pixel.")
+
+    all_new_unmasks = []
+    all_new_unmasks_complement = []
+    each_group_num = total_pixel // num_groups
+    res = total_pixel % num_groups
+    current_group = 0
+    checked_existed_pixel_num = each_group_num + (res != 0)
+
+    current_unmask = unmasked_pixels.clone()
+    for i in range(h):
+        for j in range(w):
+            if unmasked_pixels[0][i][j] == 0:
+                continue
+            for k in range(c):
+                current_unmask[k][i][j] = 0
+            checked_existed_pixel_num -= 1
+
+            if checked_existed_pixel_num == 0:
+                all_new_unmasks.append(current_unmask)
+                all_new_unmasks_complement.append(unmasked_pixels - current_unmask)
+
+                current_unmask = unmasked_pixels.clone()
+                current_group += 1
+                checked_existed_pixel_num = each_group_num + (current_group < res)
+
+            # if checked_existed_pixel_num % each_group_num == 0 and current_group < num_groups - 1:
+            #     all_new_unmasks.append(current_unmask)
+            #     all_new_unmasks_complement.append(unmasked_pixels - current_unmask)
+            #
+            #     current_unmask = unmasked_pixels.clone()
+            #     current_group += 1
+    # all_new_unmasks.append(current_unmask)
+    # all_new_unmasks_complement.append(unmasked_pixels - current_unmask)
+    assert current_group == num_groups
+    return all_new_unmasks, all_new_unmasks_complement

@@ -134,8 +134,16 @@ class TinyCNN(BaseNet):
         self.hooks.append(self.fc1.register_forward_hook(get_activation('fc1', self.tensor_log, detach)))
         self.hooks.append(self.fc2.register_forward_hook(get_activation('fc2', self.tensor_log, detach)))
 
+    def register_gradient(self, detach=True):
+        self.reset_bw_hooks()
+        # first layer should not make any difference?
+        self.bw_hooks.append(self.conv1.register_backward_hook(get_gradient('conv1', self.gradient_log, detach)))
+        self.bw_hooks.append(self.conv2.register_backward_hook(get_gradient('conv2', self.gradient_log, detach)))
+        self.bw_hooks.append(self.fc1.register_backward_hook(get_gradient('fc1', self.gradient_log, detach)))
+        self.bw_hooks.append(self.fc2.register_backward_hook(get_gradient('fc2', self.gradient_log, detach)))
+
     def model_savename(self, tag=""):
-        return "TinyCNN" + tag + datetime.now().strftime("%H:%M:%S")
+        return "TinyCNN" + tag + datetime.now().strftime("%H-%M-%S")
 
 
 class FeedforwardNeuralNetModel(BaseNet):
