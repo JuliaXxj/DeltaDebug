@@ -55,12 +55,7 @@ def get_grad_each_label(gradient_log, target_log, layers, labels) -> dict:
         logging.debug(gradient_log[l].shape)
     res = {}
     for label in labels:
-        print(label)
-        a = [gradient_log[l][target_log == label] for l in layers]
-        if label == 0:
-            for i in a:
-                print(i.shape)
-        res[label] = copy.deepcopy(np.concatenate(a,
+        res[label] = copy.deepcopy(np.concatenate([gradient_log[l][target_log == label] for l in layers],
                                                   axis=1))
         logging.debug(res[label].shape)
 
@@ -78,7 +73,7 @@ def test(model, device, test_loader, trace=False, detach=True):
             data, target = data.to(device), target.to(device)
             output = model(data.float())
             # sum up batch loss
-            test_loss += F.nll_loss(output, target, reduction='sum').item()
+            test_loss += F.nll_loss(F.log_softmax(output, dim=1), target, reduction='sum').item()
             # get the index of the max log-probability
             pred = output.argmax(dim=1, keepdim=True)
             correct += pred.eq(target.view_as(pred)).sum().item()
